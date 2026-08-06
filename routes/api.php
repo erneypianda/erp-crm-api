@@ -15,13 +15,14 @@ Route::get('/user', function (Request $request) {
 // Autenticación pública
 Route::post('/login', [AuthController::class, 'login']);
 
-// Rutas protegidas con Sanctum
+// Rutas protegidas con Sanctum (requieren token)
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
-});
 
-Route::apiResource('products', ProductController::class);
-Route::apiResource('categories', CategoryController::class);
-Route::apiResource('customers', CustomerController::class);
-Route::apiResource('sales', SaleController::class)->except(['update']);
+    // Endpoints de negocio: solo accesibles con un token válido
+    Route::apiResource('products', ProductController::class);
+    Route::apiResource('categories', CategoryController::class);
+    Route::apiResource('customers', CustomerController::class);
+    Route::apiResource('sales', SaleController::class)->except(['update']);
+});
