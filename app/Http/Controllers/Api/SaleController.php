@@ -4,27 +4,28 @@ namespace App\Http\Controllers\Api;
 
 use App\Exceptions\InsufficientStockException;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\SaleResource;
 use App\Models\Product;
 use App\Models\Sale;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 class SaleController extends Controller
 {
     // Tasa de impuesto aplicada al subtotal de cada venta (21% IVA).
     private const TAX_RATE = 0.21;
 
-    // 1. GET /api/sales -> Obtener todas las ventas
+    // 1. GET /api/sales -> Obtener todas las ventas (paginado)
     public function index()
     {
         $sales = Sale::with(['customer', 'user', 'items.product'])
             ->latest()
-            ->get();
+            ->paginate(15);
 
-        return response()->json([
+        return SaleResource::collection($sales)->additional([
             'success' => true,
-            'data' => $sales
-        ], 200);
+        ]);
     }
 
     // 2. POST /api/sales -> Registrar una nueva venta
@@ -47,6 +48,25 @@ class SaleController extends Controller
                 'success' => false,
                 'message' => 'No se pudo determinar el vendedor: envía "user_id" o autentícate con un token válido.',
             ], 422);
+        }
+
+        // Verificamos que todos los productos solicitados estén activos antes
+        // de abrir la transacción (un producto inactivo no debe poder venderse).
+        $productIds = array_column($validated['items'], 'product_id');
+        $inactiveProducts = Product::whereIn('id', $productIds)
+            ->where('is_active', false)
+            ->pluck('name', 'id');
+
+        if ($inactiveProducts->isNotEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Uno o más productos no están disponibles para la venta.',
+                'errors'  => [
+                    'items' => $inactiveProducts
+                        ->map(fn ($name, $id) => "El producto '{$name}' (ID: {$id}) no está activo.")
+                        ->values(),
+                ],
+            ], 422); // 422 Unprocessable Entity (error de validación)
         }
 
         try {
@@ -123,7 +143,7 @@ class SaleController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Venta registrada con éxito',
-            'data'    => $sale->load(['customer', 'user', 'items.product']),
+            'data'    => new SaleResource($sale->load(['customer', 'user', 'items.product'])),
         ], 201); // 201 Created
     }
 
@@ -132,7 +152,7 @@ class SaleController extends Controller
     {
         return response()->json([
             'success' => true,
-            'data'    => $sale->load(['customer', 'user', 'items.product'])
+            'data'    => new SaleResource($sale->load(['customer', 'user', 'items.product']))
         ], 200);
     }
 
@@ -143,6 +163,9 @@ class SaleController extends Controller
     // marca la venta como 'cancelled'.
     public function destroy(Sale $sale)
     {
+        // Solo un administrador puede cancelar ventas (ver SalePolicy::delete)
+        Gate::authorize('delete', $sale);
+
         if ($sale->status === 'cancelled') {
             return response()->json([
                 'success' => false,
@@ -164,7 +187,7 @@ class SaleController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Venta cancelada correctamente. El stock de los productos fue restituido.',
-            'data'    => $sale->fresh(['customer', 'user', 'items.product']),
+            'data'    => new SaleResource($sale->fresh(['customer', 'user', 'items.product'])),
         ], 200);
     }
 }

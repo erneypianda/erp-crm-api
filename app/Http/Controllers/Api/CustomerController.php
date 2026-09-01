@@ -3,20 +3,20 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\CustomerResource;
 use App\Models\Customer;
 use Illuminate\Http\Request;
 
 class CustomerController extends Controller
 {
-    // 1. GET /api/customers -> Obtener todos los clientes
+    // 1. GET /api/customers -> Obtener todos los clientes (paginado)
     public function index()
     {
-        $customers = Customer::all();
+        $customers = Customer::paginate(15);
 
-        return response()->json([
+        return CustomerResource::collection($customers)->additional([
             'success' => true,
-            'data' => $customers
-        ], 200);
+        ]);
     }
 
     // 2. POST /api/customers -> Crear un nuevo cliente
@@ -35,7 +35,7 @@ class CustomerController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Cliente creado con éxito',
-            'data'    => $customer
+            'data'    => new CustomerResource($customer)
         ], 201); // 201 Created
     }
 
@@ -44,7 +44,7 @@ class CustomerController extends Controller
     {
         return response()->json([
             'success' => true,
-            'data'    => $customer->load('sales')
+            'data'    => new CustomerResource($customer->load('sales'))
         ], 200);
     }
 
@@ -64,7 +64,7 @@ class CustomerController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Cliente actualizado correctamente',
-            'data'    => $customer
+            'data'    => new CustomerResource($customer)
         ], 200);
     }
 

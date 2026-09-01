@@ -3,21 +3,21 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\CategoryResource;
 use App\Models\Category;
 use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
-    // 1. GET /api/categories -> Obtener todas las categorías
+    // 1. GET /api/categories -> Obtener todas las categorías (paginado)
     public function index()
     {
         // Incluimos el conteo de productos asociados a cada categoría
-        $categories = Category::withCount('products')->get();
+        $categories = Category::withCount('products')->paginate(15);
 
-        return response()->json([
+        return CategoryResource::collection($categories)->additional([
             'success' => true,
-            'data' => $categories
-        ], 200);
+        ]);
     }
 
     // 2. POST /api/categories -> Crear una nueva categoría
@@ -33,7 +33,7 @@ class CategoryController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Categoría creada con éxito',
-            'data'    => $category
+            'data'    => new CategoryResource($category)
         ], 201); // 201 Created
     }
 
@@ -42,7 +42,7 @@ class CategoryController extends Controller
     {
         return response()->json([
             'success' => true,
-            'data'    => $category->load('products')
+            'data'    => new CategoryResource($category->load('products'))
         ], 200);
     }
 
@@ -59,7 +59,7 @@ class CategoryController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Categoría actualizada correctamente',
-            'data'    => $category
+            'data'    => new CategoryResource($category)
         ], 200);
     }
 

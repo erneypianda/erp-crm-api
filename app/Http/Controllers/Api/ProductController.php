@@ -6,19 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class ProductController extends Controller
 {
-    // 1. GET /api/products -> Obtener todos los productos
+    // 1. GET /api/products -> Obtener todos los productos (paginado)
     public function index()
     {
         // Traemos los productos junto con la categoría a la que pertenecen
-        $products = Product::with('category')->get();
+        $products = Product::with('category')->paginate(15);
 
-        return response()->json([
+        return ProductResource::collection($products)->additional([
             'success' => true,
-            'data' => ProductResource::collection($products)
-        ], 200);
+        ]);
     }
 
     // 2. POST /api/products -> Crear un nuevo producto
@@ -76,6 +76,9 @@ class ProductController extends Controller
     // 5. DELETE /api/products/{id} -> Eliminar un producto
     public function destroy(Product $product)
     {
+        // Solo un administrador puede eliminar productos (ver ProductPolicy::delete)
+        Gate::authorize('delete', $product);
+
         $product->delete();
 
         return response()->json([
