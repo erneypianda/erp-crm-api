@@ -19,6 +19,7 @@ User::firstOrCreate(
     [
         'name' => 'Admin ERP',
         'password' => bcrypt('password'), // Asigna los datos si no existe
+        'role' => 'admin',
     ]
 );
 

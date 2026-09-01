@@ -12,8 +12,8 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-// Autenticación pública
-Route::post('/login', [AuthController::class, 'login']);
+// Autenticación pública (máximo 5 intentos por minuto para mitigar fuerza bruta)
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 
 // Rutas protegidas con Sanctum (requieren token)
 Route::middleware('auth:sanctum')->group(function () {
