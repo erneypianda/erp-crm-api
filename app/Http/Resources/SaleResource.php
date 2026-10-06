@@ -15,19 +15,19 @@ class SaleResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'       => $this->id,
+            'uuid' => $this->uuid,
             'subtotal' => (float) $this->subtotal,
-            'tax'      => (float) $this->tax,
-            'total'    => (float) $this->total,
-            'status'   => $this->status,
+            'tax' => (float) $this->tax,
+            'total' => (float) $this->total,
+            'status' => $this->status,
             'customer' => new CustomerResource($this->whenLoaded('customer')),
-            'user'     => $this->whenLoaded('user', function () {
+            'user' => $this->whenLoaded('user', function () {
                 return [
-                    'id'   => $this->user->id,
+                    'id' => $this->user->id,
                     'name' => $this->user->name,
                 ];
             }),
-            'items'    => SaleItemResource::collection($this->whenLoaded('items')),
+            'items' => SaleItemResource::collection($this->whenLoaded('items')),
         ];
     }
 }
