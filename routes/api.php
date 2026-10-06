@@ -24,5 +24,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('products', ProductController::class);
     Route::apiResource('categories', CategoryController::class);
     Route::apiResource('customers', CustomerController::class);
-    Route::apiResource('sales', SaleController::class)->except(['update']);
+
+    Route::get('sales', [SaleController::class, 'index']);
+    Route::post('sales', [SaleController::class, 'store']);
+    Route::get('sales/uuid/{uuid}', [SaleController::class, 'statusByUuid']);
+    Route::get('sales/{sale}', [SaleController::class, 'show']);
+    Route::delete('sales/{id}', [SaleController::class, 'cancel']);
 });
